@@ -200,7 +200,7 @@ FORMAT JSON OBLIGATOIRE:
         console.log(`[AI-BTC] Claude dit NO_TRADE → force ${forcedDirection} (M15:${m15B} M5:${m5B})`);
         signal = {
           direction: forcedDirection,
-          confidence: 70,
+          confidence: 80,
           quality: 'A',
           entry: price,
           sl:  forcedDirection === 'BUY' ? +(price-slDist).toFixed(2) : +(price+slDist).toFixed(2),
