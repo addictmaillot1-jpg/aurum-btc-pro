@@ -6,6 +6,7 @@ const path     = require('path');
 const https    = require('https');
 
 const indicatorService = require('./src/services/indicatorService');
+const newsService      = require('./src/services/newsService');
 const aiService        = require('./src/services/aiService');
 const telegramService  = require('./src/services/telegramService');
 
@@ -162,7 +163,15 @@ cron.schedule('*/15 * * * *', async () => {
       return;
     }
 
-    const signal = await aiService.generateSignal('BTC/USD', price, indicators, 'M5');
+    // Vérif news avant analyse
+    const newsRisk = await newsService.checkNewsRisk();
+    if (newsRisk.blocked) {
+      console.log(`[BTC AUTO] Bloqué par news: ${newsRisk.news_event}`);
+      isAnalyzing = false;
+      return;
+    }
+
+    const signal = await aiService.generateSignal('BTC/USD', price, indicators, 'M5', newsRisk);
     if (!signal) { console.log('[BTC AUTO] Pas de signal'); isAnalyzing=false; return; }
 
     const { quality, confidence } = signal;
@@ -191,4 +200,5 @@ app.listen(PORT, () => {
   console.log(`[AURUM BTC PRO] Twelve Data: ${TD_KEY ? 'OK' : 'MANQUANT'}`);
   console.log(`[AURUM BTC PRO] Telegram BTC: ${process.env.TELEGRAM_TOKEN_BTC ? 'OK' : 'MANQUANT'}`);
   console.log(`[AURUM BTC PRO] Anthropic: ${process.env.ANTHROPIC_KEY ? 'OK' : 'MANQUANT'}`);
+  console.log(`[AURUM BTC PRO] Finnhub: ${process.env.FINNHUB_KEY ? 'OK' : 'NON CONFIGURÉ (filtre news désactivé)'}`);
 });
