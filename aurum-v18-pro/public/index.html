@@ -2,106 +2,46 @@
 <html lang="fr">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
-<title>AURUM v18 PRO</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AURUM BTC PRO</title>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 body{background:#06080c;color:#c0b090;font-family:'Courier New',monospace;min-height:100vh;padding-bottom:40px}
 .header{background:linear-gradient(180deg,#0d0f15,#06080c);border-bottom:1px solid #12151e;text-align:center;padding:18px 16px 12px}
-.logo{display:flex;align-items:center;justify-content:center;gap:10px;margin-bottom:3px}
-.logo-text{font-size:26px;font-weight:900;letter-spacing:7px;color:#d4af37;font-family:serif}
-.v{font-size:8px;color:#d4af37;border:1px solid #d4af3740;border-radius:3px;padding:1px 5px}
-.dot{font-size:7px;letter-spacing:1px;color:#00e87a}
-.sub{font-size:8px;letter-spacing:4px;color:#302e20}
+.logo-text{font-size:26px;font-weight:900;letter-spacing:7px;color:#f7931a;font-family:serif}
+.sub{font-size:8px;letter-spacing:4px;color:#302e20;margin-top:4px}
 .wrap{max-width:480px;margin:0 auto;padding:0 10px}
 .price-bar{display:flex;justify-content:space-between;align-items:center;margin-top:12px;padding:10px 14px;background:#0a0c10;border-radius:8px;border:1px solid #1e2230}
-.price-label{font-size:8px;letter-spacing:3px;color:#303020}
-.price-val{font-size:22px;font-weight:900;color:#d4af37;font-family:monospace}
-.price-change{font-size:9px;font-weight:700;margin-top:2px}
-.price-source{font-size:7px;color:#252530;margin-top:2px}
+.price-val{font-size:22px;font-weight:900;color:#f7931a;font-family:monospace}
 .chart-box{margin-top:10px;border-radius:10px;overflow:hidden;border:1px solid #1e2230;height:280px}
 .tf-btns{display:flex;gap:4px;margin-top:6px}
-.tf-btn{flex:1;padding:6px 2px;background:#0a0c10;border:1px solid #1e2230;border-radius:5px;cursor:pointer;font-size:8px;color:#453d30;font-family:monospace;letter-spacing:1px;transition:all 0.2s;-webkit-tap-highlight-color:transparent}
-.tf-btn.active{background:#d4af3715;border-color:#d4af37;color:#d4af37}
-.indicators-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:4px;margin-top:10px}
-.ind-card{padding:8px;background:#0a0c10;border-radius:6px;border:1px solid #1e2230;text-align:center}
-.ind-label{font-size:7px;letter-spacing:1px;color:#303020;margin-bottom:3px}
-.ind-val{font-size:11px;font-weight:800;font-family:monospace}
-.score-bar{margin-top:10px;padding:10px 14px;background:#0a0c10;border-radius:8px;border:1px solid #1e2230}
-.score-label{font-size:8px;letter-spacing:2px;color:#303020;margin-bottom:6px}
-.score-track{height:6px;background:#12151e;border-radius:3px;overflow:hidden}
-.score-fill{height:100%;border-radius:3px;transition:width 0.5s}
-.score-nums{display:flex;justify-content:space-between;margin-top:4px;font-size:8px}
-.ctrl-box{margin-top:12px;padding:14px;background:#0a0c10;border:1px solid #00e87a25;border-radius:10px}
-.ctrl-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px}
-.ctrl-title{font-size:9px;letter-spacing:3px;color:#00e87a}
-.ctrl-status{font-size:9px;font-weight:700;color:#453d30}
-.ctrl-status.on{color:#00e87a}
-.tg-badge{text-align:right}
-.tg-label{font-size:7px;color:#303020}
-.tg-ok{font-size:8px;color:#00e87a}
-.interval-row{display:flex;align-items:center;gap:8px;margin-bottom:10px}
-.interval-label{font-size:8px;color:#453d30;white-space:nowrap}
-.interval-sel{background:#06080c;border:1px solid #1e2230;border-radius:5px;padding:5px 8px;color:#d4af37;font-family:monospace;font-size:9px;flex:1}
-.btns{display:grid;grid-template-columns:1fr 1fr;gap:8px}
-.btn-start{background:linear-gradient(135deg,#005525,#00e87a);border:none;border-radius:8px;padding:14px;cursor:pointer;font-size:10px;font-weight:900;color:#06080c;font-family:monospace;letter-spacing:2px;-webkit-tap-highlight-color:transparent}
-.btn-stop{background:transparent;border:1px solid #ff3355;border-radius:8px;padding:14px;cursor:pointer;font-size:10px;font-weight:900;color:#ff3355;font-family:monospace;letter-spacing:2px;-webkit-tap-highlight-color:transparent}
-.btn-now{width:100%;margin-top:8px;padding:14px;background:linear-gradient(135deg,#b08010,#d4af37);border:none;border-radius:8px;cursor:pointer;font-size:10px;font-weight:900;color:#06080c;font-family:monospace;letter-spacing:3px;-webkit-tap-highlight-color:transparent}
-.last{font-size:7px;color:#252530;margin-top:6px;text-align:right}
-.signal-box{margin-top:10px;display:none}
-.banner{padding:14px;border-radius:10px;text-align:center;position:relative}
-.b-label{font-size:8px;letter-spacing:4px;color:#303020;margin-bottom:4px}
-.b-dir{font-size:34px;font-weight:900;letter-spacing:7px;font-family:serif}
-.b-sub{font-size:9px;color:#453d30;margin-top:2px}
-.badges{display:flex;justify-content:center;gap:8px;margin-top:8px;flex-wrap:wrap}
-.badge{padding:3px 12px;border-radius:20px;font-size:9px;font-weight:700}
-.badge2{padding:3px 10px;background:#06080c;border:1px solid #12151e;border-radius:20px;font-size:8px;color:#453d30}
-.qual{position:absolute;top:8px;right:8px;font-size:8px;border-radius:8px;padding:2px 7px;border:1px solid}
-.tabs{display:flex;gap:2px;margin:10px 0 8px;background:#0a0c10;border-radius:7px;padding:3px}
-.tab{flex:1;padding:6px;background:transparent;border:none;border-radius:5px;cursor:pointer;font-size:8px;letter-spacing:1px;color:#252535;font-family:monospace;-webkit-tap-highlight-color:transparent}
-.tab.active{background:#12151e;color:#d4af37}
-.row{display:flex;justify-content:space-between;align-items:center;padding:8px 12px;background:#0a0c10;border-radius:6px;margin-bottom:4px}
-.rl{font-size:8px;letter-spacing:2px;color:#353845}
-.rv{font-size:13px;font-weight:800;font-family:monospace}
-.tpg{display:grid;grid-template-columns:1fr 1fr 1fr;gap:4px;margin-bottom:4px}
-.tpb{padding:8px 4px;background:#0a0c10;border-radius:6px;text-align:center}
-.tpl{font-size:7px;color:#303020;margin-bottom:2px}
-.tpv{font-size:11px;font-weight:800;color:#00e87a}
-.twog{display:grid;grid-template-columns:1fr 1fr;gap:4px;margin-bottom:4px}
-.card{padding:9px 12px;background:#0a0c10;border-radius:6px;margin-bottom:4px}
-.cl{font-size:7px;letter-spacing:2px;color:#353020;margin-bottom:3px}
-.ct{font-size:10px;color:#7a6a50;line-height:1.6}
-.log-box{margin-top:10px;padding:10px 12px;background:#0a0c10;border:1px solid #12151e;border-radius:8px;display:none}
+.tf-btn{flex:1;padding:6px 2px;background:#0a0c10;border:1px solid #1e2230;border-radius:5px;cursor:pointer;font-size:8px;color:#453d30;font-family:monospace}
+.tf-btn.active{background:#f7931a15;border-color:#f7931a;color:#f7931a}
+.status-box{margin-top:12px;padding:14px;background:#0a0c10;border:1px solid #f7931a25;border-radius:10px}
+.status-title{font-size:9px;letter-spacing:3px;color:#f7931a;margin-bottom:8px}
+.status-row{display:flex;justify-content:space-between;margin-bottom:6px}
+.status-label{font-size:8px;color:#453d30}
+.status-val{font-size:9px;font-weight:700;color:#f7931a}
+.active-trade{margin-top:10px;padding:12px;background:#0a0c10;border-radius:8px;border:1px solid #1e2230;display:none}
+.at-row{display:flex;justify-content:space-between;font-size:10px;padding:4px 0;border-bottom:1px solid #12151e}
+.log-box{margin-top:10px;padding:10px 12px;background:#0a0c10;border:1px solid #12151e;border-radius:8px}
 .log-title{font-size:7px;letter-spacing:2px;color:#303020;margin-bottom:6px}
 .log-item{display:flex;justify-content:space-between;font-size:9px;padding:4px 0;border-bottom:1px solid #12151e}
 .footer{text-align:center;margin-top:24px;font-size:7px;color:#12151e;letter-spacing:2px}
-.loading{display:inline-block;width:8px;height:8px;border:1px solid #d4af3740;border-top-color:#d4af37;border-radius:50%;animation:spin 0.8s linear infinite;margin-right:6px}
-@keyframes spin{to{transform:rotate(360deg)}}
 </style>
 </head>
 <body>
-
 <div class="header">
-  <div class="logo">
-    <span>&#9904;</span>
-    <span class="logo-text">AURUM</span>
-    <div>
-      <div class="v">v18 PRO</div>
-      <div class="dot" id="liveDot">LIVE</div>
-    </div>
-  </div>
-  <div class="sub">XAU/USD · INDICATEURS REELS · TELEGRAM 24/7</div>
+  <div class="logo-text">₿ AURUM BTC PRO</div>
+  <div class="sub">BTC/USD · SCALPING · SMC · ICT · TELEGRAM</div>
 </div>
-
 <div class="wrap">
-
-  <!-- PRIX -->
   <div class="price-bar">
     <div>
-      <div class="price-label">XAU/USD OR SPOT</div>
+      <div style="font-size:8px;letter-spacing:3px;color:#303020">BTC/USD</div>
       <div class="price-val" id="priceVal">Chargement...</div>
-      <div class="price-change" id="priceChange"></div>
-      <div class="price-source" id="priceSource">Connexion serveur...</div>
+      <div id="priceChange" style="font-size:9px;font-weight:700;margin-top:2px"></div>
+      <div id="priceSource" style="font-size:7px;color:#252530;margin-top:2px">Connexion...</div>
     </div>
     <div style="text-align:right">
       <div style="font-size:8px;color:#303020" id="sessionLabel">--</div>
@@ -109,312 +49,142 @@ body{background:#06080c;color:#c0b090;font-family:'Courier New',monospace;min-he
     </div>
   </div>
 
-  <!-- CHART -->
-  <div class="chart-box">
-    <div id="tv_chart" style="height:100%;width:100%"></div>
-  </div>
+  <div class="chart-box"><div id="tv_chart" style="height:100%;width:100%"></div></div>
   <div class="tf-btns">
-    <button class="tf-btn" onclick="setTF('1',this)">M1</button>
-    <button class="tf-btn active" onclick="setTF('15',this)">M15</button>
+    <button class="tf-btn active" onclick="setTF('5',this)">M5</button>
+    <button class="tf-btn" onclick="setTF('15',this)">M15</button>
     <button class="tf-btn" onclick="setTF('30',this)">M30</button>
     <button class="tf-btn" onclick="setTF('60',this)">H1</button>
     <button class="tf-btn" onclick="setTF('240',this)">H4</button>
     <button class="tf-btn" onclick="setTF('D',this)">1D</button>
   </div>
 
-  <!-- INDICATEURS -->
-  <div class="indicators-grid">
-    <div class="ind-card"><div class="ind-label">RSI 14</div><div class="ind-val" id="iRSI">--</div></div>
-    <div class="ind-card"><div class="ind-label">ADX 14</div><div class="ind-val" id="iADX">--</div></div>
-    <div class="ind-card"><div class="ind-label">ATR 14</div><div class="ind-val" id="iATR">--</div></div>
-    <div class="ind-card"><div class="ind-label">EMA 20</div><div class="ind-val" id="iEMA20">--</div></div>
-    <div class="ind-card"><div class="ind-label">EMA 50</div><div class="ind-val" id="iEMA50">--</div></div>
-    <div class="ind-card"><div class="ind-label">BIAIS</div><div class="ind-val" id="iBias" style="font-size:9px">--</div></div>
+  <div class="status-box">
+    <div class="status-title">AURUM BTC — STATUT</div>
+    <div class="status-row"><span class="status-label">MODE</span><span class="status-val">AUTO 15 MIN · SMC M5/M15</span></div>
+    <div class="status-row"><span class="status-label">TRADE ACTIF</span><span class="status-val" id="tradeStatus">Aucun</span></div>
+    <div class="status-row"><span class="status-label">DERNIER SIGNAL</span><span class="status-val" id="lastSignal" style="color:#ff8c00">--</span></div>
+    <div class="status-row"><span class="status-label">PRIX ENVOYÉ</span><span class="status-val" id="priceSent">--</span></div>
   </div>
 
-  <!-- SCORE -->
-  <div class="score-bar">
-    <div class="score-label">SCORE CONFLUENCE</div>
-    <div class="score-track"><div class="score-fill" id="scoreFill" style="width:0%;background:#453d30"></div></div>
-    <div class="score-nums">
-      <span id="scoreVal" style="color:#453d30">0/100</span>
-      <span id="scoreQual" style="color:#453d30">--</span>
-    </div>
+  <div class="active-trade" id="activeTradeBox">
+    <div style="font-size:7px;letter-spacing:2px;color:#303020;margin-bottom:8px">TRADE EN COURS</div>
+    <div class="at-row"><span style="color:#453d30">Direction</span><span id="atDir" style="font-weight:900"></span></div>
+    <div class="at-row"><span style="color:#453d30">Entrée</span><span id="atEntry"></span></div>
+    <div class="at-row"><span style="color:#ff3355">Stop Loss</span><span id="atSL" style="color:#ff3355"></span></div>
+    <div class="at-row"><span style="color:#00e87a">TP1</span><span id="atTP1" style="color:#00e87a"></span></div>
   </div>
 
-  <!-- CONTROLES -->
-  <div class="ctrl-box">
-    <div class="ctrl-top">
-      <div>
-        <div class="ctrl-title">AUTO-SIGNAL 24/7</div>
-        <div class="ctrl-status" id="ctrlStatus">INACTIF</div>
-      </div>
-      <div class="tg-badge">
-        <div class="tg-label">TELEGRAM</div>
-        <div class="tg-ok">CONNECTE</div>
-      </div>
-    </div>
-    <div class="interval-row">
-      <span class="interval-label">ANALYSER TOUTES LES</span>
-      <select class="interval-sel" id="ivSel">
-        <option value="300000" selected>5 minutes</option>
-        <option value="600000">10 minutes</option>
-        <option value="900000">15 minutes</option>
-        <option value="1800000">30 minutes</option>
-      </select>
-    </div>
-    <div class="btns">
-      <button class="btn-start" onclick="startAuto()">DEMARRER</button>
-      <button class="btn-stop" onclick="stopAuto()">ARRETER</button>
-    </div>
-    <button class="btn-now" onclick="analyzeNow()">SIGNAL IMMEDIAT</button>
-    <div class="last" id="lastCheck">--</div>
+  <div class="log-box">
+    <div class="log-title">HISTORIQUE SIGNAUX</div>
+    <div id="logItems"><div style="font-size:8px;color:#252530;text-align:center;padding:10px">En attente du prochain signal...</div></div>
   </div>
 
-  <!-- LOG -->
-  <div class="log-box" id="logBox">
-    <div class="log-title">HISTORIQUE</div>
-    <div id="logItems"></div>
-  </div>
-
-  <!-- SIGNAL -->
-  <div class="signal-box" id="signalBox">
-    <div class="banner" id="banner">
-      <div class="qual" id="qualB"></div>
-      <div class="b-label">SIGNAL AURUM v18 PRO</div>
-      <div class="b-dir" id="bDir"></div>
-      <div class="b-sub" id="bSub"></div>
-      <div class="badges">
-        <div class="badge" id="confB"></div>
-        <div class="badge2" id="sessB"></div>
-      </div>
-    </div>
-    <div class="tabs">
-      <button class="tab active" onclick="stab('signal',this)">SIGNAL</button>
-      <button class="tab" onclick="stab('analyse',this)">ANALYSE</button>
-      <button class="tab" onclick="stab('gestion',this)">GESTION</button>
-    </div>
-    <div id="tab-signal">
-      <div class="row" id="rowE"><span class="rl">ENTREE</span><span class="rv" id="vE"></span></div>
-      <div class="row"><span class="rl">ZONE ENTREE</span><span class="rv" style="font-size:10px;color:#d4af37" id="vZone"></span></div>
-      <div class="row" style="border-left:2px solid #ff3355"><span class="rl">STOP LOSS</span><span class="rv" style="color:#ff3355" id="vSL"></span></div>
-      <div class="tpg">
-        <div class="tpb" style="border-top:2px solid rgba(0,232,122,0.3)"><div class="tpl">TP1 (1R)</div><div class="tpv" id="vT1"></div></div>
-        <div class="tpb" style="border-top:2px solid rgba(0,232,122,0.5)"><div class="tpl">TP2 (2R)</div><div class="tpv" id="vT2"></div></div>
-        <div class="tpb" style="border-top:2px solid rgba(0,232,122,0.8)"><div class="tpl">TP3 (3R)</div><div class="tpv" id="vT3"></div></div>
-      </div>
-      <div class="twog">
-        <div class="row" style="margin-bottom:0"><span class="rl">R:R</span><span class="rv" style="color:#d4af37" id="vRR"></span></div>
-        <div class="row" style="margin-bottom:0"><span class="rl">CONFIANCE</span><span class="rv" id="vConf"></span></div>
-      </div>
-      <div class="card" style="border-left:2px solid rgba(255,136,0,0.4);margin-top:4px">
-        <div class="cl">MOTIF DU TRADE</div>
-        <div class="ct" id="vReason"></div>
-      </div>
-    </div>
-    <div id="tab-analyse" style="display:none">
-      <div class="indicators-grid" style="margin-top:0">
-        <div class="ind-card"><div class="ind-label">RSI</div><div class="ind-val" id="sRSI">--</div></div>
-        <div class="ind-card"><div class="ind-label">ADX</div><div class="ind-val" id="sADX">--</div></div>
-        <div class="ind-card"><div class="ind-label">ATR</div><div class="ind-val" id="sATR">--</div></div>
-      </div>
-      <div class="card" style="margin-top:4px"><div class="cl">BIAIS EMA</div><div class="ct" id="sEMA"></div></div>
-      <div class="card"><div class="cl">SESSION</div><div class="ct" id="sSession"></div></div>
-      <div class="card"><div class="cl">TIMEFRAME OPTIMAL</div><div class="ct" id="sTF"></div></div>
-    </div>
-    <div id="tab-gestion" style="display:none">
-      <div style="display:flex;flex-direction:column;gap:4px">
-        <div style="display:flex;gap:8px;padding:7px 10px;background:#0a0c10;border-radius:5px"><span style="font-size:8px;color:rgba(212,175,55,0.4);min-width:16px">1.</span><span style="font-size:10px;color:#504535;line-height:1.5">Attends confirmation bougie M1 avant d entrer</span></div>
-        <div style="display:flex;gap:8px;padding:7px 10px;background:#0a0c10;border-radius:5px"><span style="font-size:8px;color:rgba(212,175,55,0.4);min-width:16px">2.</span><span style="font-size:10px;color:#504535;line-height:1.5">Ferme 50% a TP1 - SL au breakeven</span></div>
-        <div style="display:flex;gap:8px;padding:7px 10px;background:#0a0c10;border-radius:5px"><span style="font-size:8px;color:rgba(212,175,55,0.4);min-width:16px">3.</span><span style="font-size:10px;color:#504535;line-height:1.5">Risque max 1-2% du capital</span></div>
-        <div style="display:flex;gap:8px;padding:7px 10px;background:#0a0c10;border-radius:5px"><span style="font-size:8px;color:rgba(212,175,55,0.4);min-width:16px">4.</span><span style="font-size:10px;color:#504535;line-height:1.5">SL base sur ATR x 1.5</span></div>
-      </div>
-      <div style="padding:8px 12px;background:rgba(255,40,60,0.04);border:1px solid #2a1018;border-radius:6px;margin-top:8px">
-        <div style="font-size:7px;color:#ff3355;margin-bottom:2px">RISK MANAGEMENT</div>
-        <div style="font-size:8px;color:#3a1020;line-height:1.6">Maximum 1-2% du capital. AURUM v18 PRO optimise l edge mais aucun systeme n est infaillible.</div>
-      </div>
-    </div>
-  </div>
-
-  <div class="footer">AURUM v18 PRO · XAU/USD · INDICATEURS REELS · TELEGRAM · 24/7</div>
+  <div class="footer">AURUM BTC PRO · SMC · ICT · TELEGRAM · 24/7</div>
 </div>
 
 <script src="https://s3.tradingview.com/tv.js"></script>
 <script>
-let currentPrice = 0;
-let prevPrice = 0;
-let autoTimer = null;
-let isAuto = false;
-let currentTF = '15';
-let currentIndicators = {};
+let prevPrice=0, currentPrice=0, currentTF='5', TD_KEY_VALUE='';
 
 function initChart(tf) {
-  document.getElementById('tv_chart').innerHTML = '';
-  new TradingView.widget({
-    autosize: true, symbol: 'OANDA:XAUUSD', interval: tf,
-    timezone: 'Europe/Paris', theme: 'dark', style: '1', locale: 'fr',
-    toolbar_bg: '#06080c', enable_publishing: false,
-    container_id: 'tv_chart', backgroundColor: '#06080c',
-    gridColor: 'rgba(30,34,48,0.3)',
-    studies: ['RSI@tv-basicstudies', 'MAExp@tv-basicstudies'],
-    hide_side_toolbar: true, allow_symbol_change: false, withdateranges: false,
-  });
+  document.getElementById('tv_chart').innerHTML='';
+  new TradingView.widget({ autosize:true, symbol:'BINANCE:BTCUSDT', interval:tf,
+    timezone:'Europe/Paris', theme:'dark', style:'1', locale:'fr',
+    toolbar_bg:'#06080c', enable_publishing:false, container_id:'tv_chart',
+    backgroundColor:'#06080c', studies:['RSI@tv-basicstudies'],
+    hide_side_toolbar:true, allow_symbol_change:false, withdateranges:false });
 }
-initChart('15');
 
 function setTF(tf, el) {
-  currentTF = tf;
-  document.querySelectorAll('.tf-btn').forEach(b => b.className = 'tf-btn');
-  el.className = 'tf-btn active';
+  currentTF=tf;
+  document.querySelectorAll('.tf-btn').forEach(b=>b.className='tf-btn');
+  el.className='tf-btn active';
   initChart(tf);
 }
 
 function getSession() {
-  const h = new Date().getUTCHours();
-  if (h >= 22 || h < 7) return 'Asia 22h-07h UTC';
-  if (h >= 7 && h < 12) return 'London 07h-12h UTC';
-  if (h >= 12 && h < 17) return 'New York 13h-17h UTC';
-  return 'Overlap London/NY';
+  const h=new Date().getUTCHours();
+  if(h>=22||h<7) return 'Asia';
+  if(h>=7&&h<10) return 'London Open';
+  if(h>=10&&h<12) return 'London Mid';
+  if(h>=12&&h<14) return 'NY Overlap';
+  if(h>=14&&h<17) return 'New York';
+  return 'Pre-market';
 }
 
-async function fetchPrice() {
+async function fetchAndSendPrice() {
   try {
-    const r = await fetch('/api/price/XAU%2FUSD');
-    const d = await r.json();
-    if (d.success && d.price > 0) {
-      const p = d.price;
-      const change = prevPrice > 0 ? ((p - prevPrice) / prevPrice * 100).toFixed(3) : '0.000';
-      const up = p >= prevPrice;
-      currentPrice = p;
-      prevPrice = p;
-      document.getElementById('priceVal').textContent = p.toFixed(2) + ' $';
-      document.getElementById('priceVal').style.color = up ? '#00e87a' : '#ff3355';
-      document.getElementById('priceChange').textContent = (parseFloat(change) > 0 ? '+' : '') + change + '%';
-      document.getElementById('priceChange').style.color = parseFloat(change) >= 0 ? '#00e87a' : '#ff3355';
-      document.getElementById('priceTime').textContent = new Date().toLocaleTimeString('fr-FR');
-      document.getElementById('priceSource').textContent = 'Serveur AURUM - temps reel';
+    if (!TD_KEY_VALUE) return;
+    const r=await fetch(`https://api.twelvedata.com/price?symbol=BTC%2FUSD&apikey=${TD_KEY_VALUE}`);
+    const d=await r.json();
+    const p=parseFloat(d.price);
+    if (p&&p>1000) {
+      currentPrice=p;
+      const chg=prevPrice>0?((p-prevPrice)/prevPrice*100).toFixed(3):'0.000';
+      const up=p>=prevPrice; prevPrice=p;
+      document.getElementById('priceVal').textContent=p.toFixed(2)+' $';
+      document.getElementById('priceVal').style.color=up?'#f7931a':'#ff3355';
+      document.getElementById('priceChange').textContent=(parseFloat(chg)>0?'+':'')+chg+'%';
+      document.getElementById('priceChange').style.color=parseFloat(chg)>=0?'#00e87a':'#ff3355';
+      document.getElementById('priceTime').textContent=new Date().toLocaleTimeString('fr-FR');
+      document.getElementById('priceSource').textContent='Twelve Data';
+      document.getElementById('priceSent').textContent=p.toFixed(2)+' $ ✓';
+      const resp=await fetch('/api/price/update',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({price:p})});
+      const data=await resp.json();
+      if (data.activeSignal) updateActiveTrade(data.activeSignal);
+      else { document.getElementById('activeTradeBox').style.display='none'; document.getElementById('tradeStatus').textContent='Aucun'; document.getElementById('tradeStatus').style.color='#f7931a'; }
     }
-  } catch (e) {
-    document.getElementById('priceSource').textContent = 'Serveur deconnecte';
-  }
+  } catch(e) { document.getElementById('priceSource').textContent='Erreur connexion'; }
 }
 
-async function analyzeNow() {
-  document.getElementById('lastCheck').textContent = 'Analyse en cours...';
+function updateActiveTrade(at) {
+  const col=at.direction==='BUY'?'#00e87a':'#ff3355';
+  document.getElementById('activeTradeBox').style.display='block';
+  document.getElementById('tradeStatus').textContent=at.direction+' EN COURS';
+  document.getElementById('tradeStatus').style.color=col;
+  document.getElementById('atDir').textContent=at.direction;
+  document.getElementById('atDir').style.color=col;
+  document.getElementById('atEntry').textContent=at.entry;
+  document.getElementById('atSL').textContent=at.sl;
+  document.getElementById('atTP1').textContent=at.tp1;
+}
+
+async function fetchHistory() {
   try {
-    const r = await fetch('/api/analyze', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ asset: 'XAU/USD', timeframe: 'M' + currentTF })
-    });
-    const d = await r.json();
-    if (d.success && d.signal) {
-      renderSignal(d.signal);
-      addLog(d.signal);
-      document.getElementById('lastCheck').textContent = new Date().toLocaleTimeString('fr-FR') + ' - ' + d.signal.direction + ' ' + d.signal.confidence + '%';
-      if (d.signal.rsi) updateIndicators(d.signal);
-    } else {
-      document.getElementById('lastCheck').textContent = 'Aucun signal valide';
+    const r=await fetch('/api/history');
+    const d=await r.json();
+    if (d.signals&&d.signals.length>0) {
+      const li=document.getElementById('logItems');
+      li.innerHTML='';
+      d.signals.slice(0,10).forEach(s=>{
+        const col=s.direction==='BUY'?'#00e87a':'#ff3355';
+        const el=document.createElement('div');
+        el.className='log-item';
+        el.innerHTML=`<span style="color:${col}">${s.direction}</span><span style="color:#303020">${new Date(s.timestamp).toLocaleTimeString('fr-FR')}</span><span style="color:#453d30">${s.confidence}% ${s.quality}</span>`;
+        li.appendChild(el);
+      });
+      const last=d.signals[0];
+      document.getElementById('lastSignal').textContent=last.direction+' '+last.confidence+'% — '+new Date(last.timestamp).toLocaleTimeString('fr-FR');
     }
-  } catch (e) {
-    document.getElementById('lastCheck').textContent = 'Erreur: ' + e.message;
-  }
+  } catch(e) {}
 }
 
-function updateIndicators(signal) {
-  if (signal.rsi) { document.getElementById('iRSI').textContent = signal.rsi; document.getElementById('sRSI').textContent = signal.rsi; }
-  if (signal.adx) { document.getElementById('iADX').textContent = signal.adx; document.getElementById('sADX').textContent = signal.adx; }
-  if (signal.atr) { document.getElementById('iATR').textContent = signal.atr; document.getElementById('sATR').textContent = signal.atr; }
-  if (signal.ema_bias) { document.getElementById('iBias').textContent = signal.ema_bias; document.getElementById('sEMA').textContent = 'Biais: ' + signal.ema_bias; }
-  if (signal.score !== undefined) {
-    const score = signal.score;
-    const quality = signal.quality;
-    const scoreColor = quality === 'A+' ? '#00e87a' : quality === 'A' ? '#d4af37' : quality === 'B' ? '#ff8c00' : '#ff3355';
-    document.getElementById('scoreFill').style.width = score + '%';
-    document.getElementById('scoreFill').style.background = scoreColor;
-    document.getElementById('scoreVal').textContent = score + '/100';
-    document.getElementById('scoreVal').style.color = scoreColor;
-    document.getElementById('scoreQual').textContent = quality;
-    document.getElementById('scoreQual').style.color = scoreColor;
-  }
-  if (signal.session) document.getElementById('sSession').textContent = signal.session;
-  if (signal.timeframe) document.getElementById('sTF').textContent = signal.timeframe;
+async function loadConfig() {
+  try { const r=await fetch('/api/config'); const d=await r.json(); TD_KEY_VALUE=d.tdKey||''; } catch(e) {}
 }
 
-function startAuto() {
-  if (isAuto) return;
-  isAuto = true;
-  const iv = parseInt(document.getElementById('ivSel').value);
-  document.getElementById('ctrlStatus').textContent = 'ACTIF - toutes les ' + (iv/60000) + ' min';
-  document.getElementById('ctrlStatus').className = 'ctrl-status on';
-  analyzeNow();
-  autoTimer = setInterval(analyzeNow, iv);
+function initApp() {
+  initChart('5');
+  loadConfig().then(()=>{ fetchAndSendPrice(); setInterval(fetchAndSendPrice,15000); });
+  fetchHistory();
+  setInterval(fetchHistory,30000);
+  document.getElementById('sessionLabel').textContent=getSession();
+  setInterval(()=>document.getElementById('sessionLabel').textContent=getSession(),60000);
 }
 
-function stopAuto() {
-  if (!isAuto) return;
-  isAuto = false;
-  clearInterval(autoTimer);
-  document.getElementById('ctrlStatus').textContent = 'INACTIF';
-  document.getElementById('ctrlStatus').className = 'ctrl-status';
-}
-
-function addLog(signal) {
-  document.getElementById('logBox').style.display = 'block';
-  const li = document.getElementById('logItems');
-  const el = document.createElement('div');
-  el.className = 'log-item';
-  const col = signal.direction === 'BUY' ? '#00e87a' : '#ff3355';
-  el.innerHTML = '<span style="color:' + col + '">XAU/USD ' + signal.direction + '</span><span style="color:#303020">' + new Date().toLocaleTimeString('fr-FR') + '</span><span style="color:#453d30">' + signal.confidence + '% ' + signal.quality + '</span>';
-  li.insertBefore(el, li.firstChild);
-  if (li.children.length > 10) li.removeChild(li.lastChild);
-}
-
-function renderSignal(r) {
-  const col = r.direction === 'BUY' ? '#00e87a' : '#ff3355';
-  const qc = r.quality === 'A+' ? '#00e87a' : r.quality === 'A' ? '#d4af37' : '#ff8c00';
-  document.getElementById('signalBox').style.display = 'block';
-  const bn = document.getElementById('banner');
-  bn.style.background = col + '07'; bn.style.border = '1px solid ' + col + '25';
-  document.getElementById('qualB').textContent = 'SETUP ' + (r.quality || '');
-  document.getElementById('qualB').style.color = qc;
-  document.getElementById('qualB').style.borderColor = qc + '40';
-  document.getElementById('bDir').textContent = r.direction;
-  document.getElementById('bDir').style.color = col;
-  document.getElementById('bSub').textContent = 'XAU/USD - ' + currentPrice.toFixed(2) + ' $';
-  document.getElementById('confB').textContent = 'CONFIANCE ' + r.confidence + '%';
-  document.getElementById('confB').style.color = col;
-  document.getElementById('confB').style.background = col + '15';
-  document.getElementById('confB').style.border = '1px solid ' + col + '30';
-  document.getElementById('sessB').textContent = r.session || getSession();
-  document.getElementById('rowE').style.borderLeft = '2px solid ' + col;
-  document.getElementById('vE').textContent = r.entry || '?';
-  document.getElementById('vE').style.color = col;
-  document.getElementById('vZone').textContent = r.zone || '--';
-  document.getElementById('vSL').textContent = r.sl || '?';
-  document.getElementById('vT1').textContent = r.tp1 || '?';
-  document.getElementById('vT2').textContent = r.tp2 || '?';
-  document.getElementById('vT3').textContent = r.tp3 || '?';
-  document.getElementById('vRR').textContent = r.rr || '?';
-  document.getElementById('vConf').textContent = (r.confidence || '?') + '%';
-  document.getElementById('vReason').textContent = r.reason || '';
-  if (r.rsi || r.adx || r.score !== undefined) updateIndicators(r);
-  document.getElementById('signalBox').scrollIntoView({ behavior: 'smooth' });
-}
-
-function stab(n, el) {
-  ['signal', 'analyse', 'gestion'].forEach(t => document.getElementById('tab-' + t).style.display = t === n ? 'block' : 'none');
-  document.querySelectorAll('.tab').forEach(b => b.className = 'tab' + (b === el ? ' active' : ''));
-}
-
-fetchPrice();
-setInterval(fetchPrice, 15000);
-setInterval(() => {
-  const d = document.getElementById('liveDot');
-  d.style.color = d.style.color === '#303020' ? '#00e87a' : '#303020';
-}, 800);
-document.getElementById('sessionLabel').textContent = getSession();
-setInterval(() => document.getElementById('sessionLabel').textContent = getSession(), 60000);
+if (typeof TradingView!=='undefined') initApp();
+else document.querySelector('script[src*="tradingview"]').addEventListener('load',initApp);
 </script>
 </body>
 </html>
