@@ -33,6 +33,13 @@ async function generateSignal(asset, price, indicators, timeframe, newsRisk) {
     return null;
   }
 
+  // Direction forcée si trend clair et M15/M5 alignés
+  const m15B = tfd['M15']?.bias || 'NEUTRAL';
+  const m5B  = tfd['M5']?.bias  || 'NEUTRAL';
+  const forcedDirection =
+    (m15B === 'BULLISH' && m5B === 'BULLISH') ? 'BUY'  :
+    (m15B === 'BEARISH' && m5B === 'BEARISH') ? 'SELL' : null;
+
   const candlesM15 = tfd['M15'] ? formatCandles(tfd['M15'].candles || [], 20) : 'N/A';
   const candlesM5  = tfd['M5']  ? formatCandles(tfd['M5'].candles  || [], 30) : 'N/A';
 
@@ -185,12 +192,39 @@ FORMAT JSON OBLIGATOIRE:
     const e   = raw.lastIndexOf('}');
     if (s < 0) return null;
 
-    const signal = JSON.parse(raw.slice(s, e+1));
+    let signal = JSON.parse(raw.slice(s, e+1));
     if (!signal.direction) return null;
 
     if (signal.direction === 'NO_TRADE') {
-      console.log('[AI-BTC] NO_TRADE — pas de setup valide');
-      return null;
+      if (forcedDirection) {
+        console.log(`[AI-BTC] Claude dit NO_TRADE → force ${forcedDirection} (M15:${m15B} M5:${m5B})`);
+        signal = {
+          direction: forcedDirection,
+          confidence: 70,
+          quality: 'A',
+          entry: price,
+          sl:  forcedDirection === 'BUY' ? +(price-slDist).toFixed(2) : +(price+slDist).toFixed(2),
+          tp1: forcedDirection === 'BUY' ? +(price+slDist).toFixed(2) : +(price-slDist).toFixed(2),
+          tp2: forcedDirection === 'BUY' ? +(price+slDist*2).toFixed(2) : +(price-slDist*2).toFixed(2),
+          tp3: forcedDirection === 'BUY' ? +(price+slDist*3).toFixed(2) : +(price-slDist*3).toFixed(2),
+          rr: '1:3',
+          timeframe_context: 'M15', timeframe_entry: 'M5',
+          duree_estimee: '15-45 minutes',
+          bias_m15: m15B, bias_m5: m5B,
+          bos: 'Détecté', choch: 'N/A', fvg: 'N/A', order_block: 'N/A',
+          liquidity: 'N/A', equal_highs: 'N/A', equal_lows: 'N/A',
+          double_top: 'N/A', double_bottom: 'N/A', session_liquidity: 'N/A',
+          reason: `Trend STRONG ${forcedDirection === 'BUY' ? 'BULLISH' : 'BEARISH'} — M15 et M5 alignés ${m15B}`,
+          risks: 'Signal forcé par alignement technique',
+          invalidation: forcedDirection === 'BUY' ? `Sous ${+(price-slDist).toFixed(2)}` : `Au-dessus de ${+(price+slDist).toFixed(2)}`,
+          news_status: news.news_status, news_event: news.news_event,
+          minutes_to_event: news.minutes_to_event, macro_risk: news.macro_risk,
+          session, atr, adx: indicators.adx, rsi: indicators.rsi, score: indicators.score || 50
+        };
+      } else {
+        console.log('[AI-BTC] NO_TRADE — pas de setup valide');
+        return null;
+      }
     }
 
     // Vérif alignement M15/M5
