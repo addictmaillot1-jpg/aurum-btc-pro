@@ -1,120 +1,194 @@
 require('dotenv').config();
-const express = require('express');
-const cors = require('cors');
-const cron = require('node-cron');
-const path = require('path');
+const express  = require('express');
+const cors     = require('cors');
+const cron     = require('node-cron');
+const path     = require('path');
+const https    = require('https');
 
-const marketService = require('./src/services/marketService');
 const indicatorService = require('./src/services/indicatorService');
-const aiService = require('./src/services/aiService');
-const telegramService = require('./src/services/telegramService');
-const signalRoutes = require('./src/routes/signals');
-const statsRoutes = require('./src/routes/stats');
+const aiService        = require('./src/services/aiService');
+const telegramService  = require('./src/services/telegramService');
 
-const app = express();
+const app  = express();
 const PORT = process.env.PORT || 3000;
 
 app.use(cors());
 app.use(express.json());
 app.use(express.static(path.join(__dirname, 'public')));
 
-// Routes API
-app.use('/api/signals', signalRoutes);
-app.use('/api/stats', statsRoutes);
+const TD_KEY = process.env.TWELVEDATA_KEY;
+let currentPrice = 0;
+let isAnalyzing  = false;
 
-// Route principale
-app.get('/', (req, res) => {
-  res.sendFile(path.join(__dirname, 'public', 'index.html'));
-});
-
-// Route signal immediat
-app.post('/api/analyze', async (req, res) => {
-  try {
-    const { asset = 'XAU/USD', timeframe = 'M15' } = req.body;
-    console.log(`[AURUM] Analyse immediate: ${asset} ${timeframe}`);
-
-    const price = await marketService.getPrice(asset);
-    const indicators = await indicatorService.calculate(asset, timeframe);
-    const signal = await aiService.generateSignal(asset, price, indicators, timeframe);
-
-    if (signal) {
-      await telegramService.sendSignal(signal, 'MANUAL', asset);
-      await saveSignal(signal, asset, 'MANUAL');
-    }
-
-    res.json({ success: true, signal });
-  } catch (error) {
-    console.error('[AURUM] Erreur analyse:', error.message);
-    res.status(500).json({ success: false, error: error.message });
-  }
-});
-
-// Route prix temps reel
-app.get('/api/price/:asset', async (req, res) => {
-  try {
-    const asset = decodeURIComponent(req.params.asset);
-    const price = await marketService.getPrice(asset);
-    res.json({ success: true, price, asset, timestamp: new Date().toISOString() });
-  } catch (error) {
-    res.status(500).json({ success: false, error: error.message });
-  }
-});
-
-// AUTO-ANALYSE - toutes les 5 minutes
+// =========================
+// GESTION TRADE ACTIF
+// Pas de nouveau trade tant que SL/TP pas touché
+// =========================
+const signals      = [];
+let activeSignal   = null;
 let lastSignalTime = 0;
-const MIN_SIGNAL_INTERVAL = 10 * 60 * 1000; // 10 min minimum entre signaux
+const MIN_INTERVAL = 15 * 60 * 1000;
 
-cron.schedule('*/5 * * * *', async () => {
-  console.log('[AURUM AUTO] Analyse automatique XAU/USD...');
-  try {
-    const now = Date.now();
-    const price = await marketService.getPrice('XAU/USD');
-    const indicators = await indicatorService.calculate('XAU/USD', 'M15');
-    const signal = await aiService.generateSignal('XAU/USD', price, indicators, 'M15');
-
-    if (!signal) {
-      console.log('[AURUM AUTO] Pas de signal valide');
-      return;
-    }
-
-    const quality = signal.quality;
-    const confidence = signal.confidence;
-
-    // Envoyer seulement si qualite A ou A+ et confiance >= 80
-    if ((quality === 'A' || quality === 'A+') && confidence >= 80) {
-      if (now - lastSignalTime >= MIN_SIGNAL_INTERVAL) {
-        await telegramService.sendSignal(signal, 'AUTO', 'XAU/USD');
-        await saveSignal(signal, 'XAU/USD', 'AUTO');
-        lastSignalTime = now;
-        console.log(`[AURUM AUTO] Signal envoye: ${signal.direction} ${confidence}% ${quality}`);
-      } else {
-        console.log('[AURUM AUTO] Signal ignore - trop recent');
-      }
-    } else {
-      console.log(`[AURUM AUTO] Signal rejete: ${quality} ${confidence}%`);
-    }
-  } catch (error) {
-    console.error('[AURUM AUTO] Erreur:', error.message);
-  }
-});
-
-// Sauvegarde signal en memoire (remplacer par DB en prod)
-const signals = [];
-async function saveSignal(signal, asset, type) {
-  signals.push({
-    ...signal,
-    asset,
-    type,
-    timestamp: new Date().toISOString()
-  });
+function saveSignal(signal, type) {
+  signals.push({ ...signal, type, timestamp: new Date().toISOString() });
   if (signals.length > 100) signals.shift();
 }
 
-app.get('/api/history', (req, res) => {
-  res.json({ success: true, signals: signals.slice().reverse() });
+async function checkActiveSignal(price) {
+  if (!activeSignal || !price) return true;
+
+  const { direction, entry, sl, tp1 } = activeSignal;
+  const isBuy = direction === 'BUY';
+  let closed  = false;
+  let result  = '';
+
+  if (isBuy) {
+    if (price >= tp1) {
+      closed = true;
+      result = `✅ TP1 TOUCHÉ — PROFIT\nEntrée: ${entry} → TP1: ${tp1} (+${(tp1-entry).toFixed(2)}$)`;
+    } else if (price <= sl) {
+      closed = true;
+      result = `❌ SL TOUCHÉ — PERTE\nEntrée: ${entry} → SL: ${sl} (-${(entry-sl).toFixed(2)}$)`;
+    }
+  } else {
+    if (price <= tp1) {
+      closed = true;
+      result = `✅ TP1 TOUCHÉ — PROFIT\nEntrée: ${entry} → TP1: ${tp1} (+${(entry-tp1).toFixed(2)}$)`;
+    } else if (price >= sl) {
+      closed = true;
+      result = `❌ SL TOUCHÉ — PERTE\nEntrée: ${entry} → SL: ${sl} (-${(sl-entry).toFixed(2)}$)`;
+    }
+  }
+
+  if (closed) {
+    console.log(`[BTC] Trade clôturé: ${result.replace(/\n/g,' ')}`);
+    await telegramService.sendMessage(`🏁 <b>TRADE BTC CLÔTURÉ</b>\n${result}\n⏰ ${new Date().toLocaleString('fr-FR')}`);
+    activeSignal = null;
+    return true;
+  }
+
+  const elapsed = Math.round((Date.now() - new Date(activeSignal.timestamp).getTime()) / 60000);
+  console.log(`[BTC] Trade actif ${activeSignal.direction} depuis ${elapsed}min | Prix: ${price} | TP1: ${tp1} | SL: ${sl}`);
+  return false;
+}
+
+function fetchTDPrice() {
+  return new Promise((resolve) => {
+    if (!TD_KEY) { resolve(0); return; }
+    const req = https.get({
+      hostname: 'api.twelvedata.com',
+      path: `/price?symbol=BTC%2FUSD&apikey=${TD_KEY}`,
+      headers: { 'User-Agent': 'Mozilla/5.0' }, timeout: 8000
+    }, res => {
+      let raw = '';
+      res.on('data', c => raw += c);
+      res.on('end', () => {
+        try { const p=parseFloat(JSON.parse(raw).price); if(p>1000){resolve(p);return;} } catch(e){}
+        resolve(0);
+      });
+    });
+    req.on('error', ()=>resolve(0));
+    req.on('timeout', ()=>{req.destroy();resolve(0);});
+  });
+}
+
+// =========================
+// ROUTES
+// =========================
+app.get('/', (req, res) => res.sendFile(path.join(__dirname, 'public', 'index.html')));
+
+app.post('/api/price/update', async (req, res) => {
+  const { price } = req.body;
+  if (price && price > 1000) {
+    currentPrice = parseFloat(price);
+    if (activeSignal) await checkActiveSignal(currentPrice);
+  }
+  res.json({ success: true, activeSignal: activeSignal ? {
+    direction: activeSignal.direction, entry: activeSignal.entry,
+    sl: activeSignal.sl, tp1: activeSignal.tp1
+  } : null });
 });
 
+app.get('/api/price/:asset', (req, res) => {
+  res.json({ success: true, price: currentPrice, timestamp: new Date().toISOString() });
+});
+
+app.get('/api/config', (req, res) => {
+  res.json({ tdKey: TD_KEY || '' });
+});
+
+app.get('/api/history', (req, res) => {
+  res.json({ success: true, signals: signals.slice().reverse(), activeSignal });
+});
+
+// =========================
+// CRON — Analyse BTC toutes les 15 min
+// Pas de nouveau signal si trade actif
+// =========================
+cron.schedule('*/15 * * * *', async () => {
+  console.log('[BTC AUTO] Analyse scalping BTC/USD...');
+  try {
+    if (isAnalyzing) { console.log('[BTC AUTO] Analyse déjà en cours'); return; }
+    isAnalyzing = true;
+
+    const now   = Date.now();
+    const price = currentPrice || await fetchTDPrice();
+    if (!price) { console.log('[BTC AUTO] Prix introuvable'); isAnalyzing=false; return; }
+
+    // Pas de nouveau trade tant que le trade actif n'est pas clôturé
+    const canTrade = await checkActiveSignal(price);
+    if (!canTrade) {
+      console.log('[BTC AUTO] Trade actif — attente TP1 ou SL');
+      isAnalyzing = false;
+      return;
+    }
+
+    if (now - lastSignalTime < MIN_INTERVAL) {
+      console.log('[BTC AUTO] Trop récent');
+      isAnalyzing = false;
+      return;
+    }
+
+    const indicators = await indicatorService.calculate('BTC/USD', 'M5');
+    indicators.price = price;
+    console.log(`[BTC AUTO] Prix: ${price}`);
+
+    // Vérifie alignement M15/M5
+    const m15Bias = indicators.allTimeframes?.['M15']?.bias || 'NEUTRAL';
+    const m5Bias  = indicators.allTimeframes?.['M5']?.bias  || 'NEUTRAL';
+    if (m15Bias === 'NEUTRAL' || m5Bias === 'NEUTRAL' || m15Bias !== m5Bias) {
+      console.log(`[BTC AUTO] M15/M5 non alignés (${m15Bias}/${m5Bias}) — NO_TRADE`);
+      isAnalyzing = false;
+      return;
+    }
+
+    const signal = await aiService.generateSignal('BTC/USD', price, indicators, 'M5');
+    if (!signal) { console.log('[BTC AUTO] Pas de signal'); isAnalyzing=false; return; }
+
+    const { quality, confidence } = signal;
+    if ((quality === 'A' || quality === 'A+') && confidence >= 75) {
+      await telegramService.sendSignal(signal, 'AUTO', 'BTC/USD');
+      saveSignal(signal, 'AUTO');
+      activeSignal   = { ...signal, timestamp: new Date().toISOString() };
+      lastSignalTime = now;
+      console.log(`[BTC AUTO] ✓ ${signal.direction} ${confidence}% ${quality} | Durée: ${signal.duree_estimee}`);
+    } else {
+      console.log(`[BTC AUTO] Rejeté: ${quality} ${confidence}%`);
+    }
+
+    isAnalyzing = false;
+  } catch (err) {
+    console.error('[BTC AUTO] Erreur:', err.message);
+    isAnalyzing = false;
+  }
+});
+
+// =========================
+// DEMARRAGE
+// =========================
 app.listen(PORT, () => {
-  console.log(`[AURUM v18 PRO] Serveur demarre sur port ${PORT}`);
-  console.log(`[AURUM v18 PRO] Interface: http://localhost:${PORT}`);
+  console.log(`[AURUM BTC PRO] Port ${PORT}`);
+  console.log(`[AURUM BTC PRO] Twelve Data: ${TD_KEY ? 'OK' : 'MANQUANT'}`);
+  console.log(`[AURUM BTC PRO] Telegram BTC: ${process.env.TELEGRAM_TOKEN_BTC ? 'OK' : 'MANQUANT'}`);
+  console.log(`[AURUM BTC PRO] Anthropic: ${process.env.ANTHROPIC_KEY ? 'OK' : 'MANQUANT'}`);
 });
