@@ -19,12 +19,19 @@ function formatCandles(candles, limit) {
   }).join('\n');
 }
 
-async function generateSignal(asset, price, indicators, timeframe) {
+async function generateSignal(asset, price, indicators, timeframe, newsRisk) {
   const session = getSession();
   const now     = new Date().toLocaleString('fr-FR');
   const atr     = indicators.atr || price * 0.002;
-  const slDist  = Math.max(Math.round(atr * 2.0 * 100) / 100, 200); // BTC SL min 200$
+  const slDist  = Math.max(Math.round(atr * 2.0 * 100) / 100, 200);
   const tfd     = indicators.allTimeframes || {};
+  const news    = newsRisk || { news_status: 'CLEAR', news_event: 'NONE', minutes_to_event: 0, macro_risk: 'LOW', blocked: false };
+
+  // Bloquage immédiat si news BLOQUÉE
+  if (news.blocked) {
+    console.log(`[AI-BTC] Bloqué par news: ${news.news_event}`);
+    return null;
+  }
 
   const candlesM15 = tfd['M15'] ? formatCandles(tfd['M15'].candles || [], 20) : 'N/A';
   const candlesM5  = tfd['M5']  ? formatCandles(tfd['M5'].candles  || [], 30) : 'N/A';
@@ -33,7 +40,17 @@ async function generateSignal(asset, price, indicators, timeframe) {
     const d = tfd[tf];
     if (!d) return `${tf}: N/A`;
     const smc = d.smc || {};
-    return `${tf}: RSI=${d.rsi} EMA20=${d.ema20} EMA50=${d.ema50} ATR=${d.atr} ADX=${d.adx} MACD=${d.macd?.histogram} → ${d.bias} | BOS:${smc.bos?.direction||'NONE'} CHOCH:${smc.choch?.direction||'NONE'} FVG:${smc.fvgs?.length||0} OB:${smc.orderBlocks?.length||0}`;
+    const liq = d.liquidity || {};
+    const eqh = liq.equalHighs?.join(', ') || 'NONE';
+    const eql = liq.equalLows?.join(', ')  || 'NONE';
+    const dt  = liq.doubleTop    ? `Double Top @ ${liq.doubleTop.level}`       : 'NONE';
+    const db  = liq.doubleBottom ? `Double Bottom @ ${liq.doubleBottom.level}` : 'NONE';
+    const sessLiq = liq.sessionLiquidity ? Object.entries(liq.sessionLiquidity).map(([s,v])=>`${s}[H:${v.high} L:${v.low}]`).join(' ') : 'N/A';
+    return `${tf}: RSI=${d.rsi} EMA20=${d.ema20} EMA50=${d.ema50} ATR=${d.atr} ADX=${d.adx} MACD=${d.macd?.histogram} → ${d.bias}
+  BOS:${smc.bos?.direction||'NONE'} CHOCH:${smc.choch?.direction||'NONE'} FVG:${smc.fvgs?.length||0} OB:${smc.orderBlocks?.length||0}
+  EQH(BSL):${eqh} EQL(SSL):${eql}
+  ${dt} | ${db}
+  Sessions: ${sessLiq}`;
   }).join('\n');
 
   const system = `Tu es un trader institutionnel spécialisé dans le scalping BTCUSD.
@@ -48,29 +65,39 @@ M15 = CERVEAU → tendance dominante, BOS, CHOCH, liquidité, FVG, OB, biais pri
 M5  = GÂCHETTE → entrée précise, validation M15, momentum, rejet, déclenchement
 
 RÈGLE ABSOLUE: Si M15 et M5 ne sont pas alignés → NO_TRADE.
-M15 BUY + M5 BUY = autorisé
-M15 SELL + M5 SELL = autorisé
-M15 BUY + M5 SELL = NO_TRADE
-M15 SELL + M5 BUY = NO_TRADE
+M15 BUY + M5 BUY = autorisé | M15 SELL + M5 SELL = autorisé | Sinon = NO_TRADE
 
 PRIORITÉ D'ANALYSE:
 1. Structure: HH, HL, LH, LL, BOS, CHOCH
-2. Liquidité: BSL, SSL, stop hunts, liquidité capturée
+2. Liquidité: BSL (Equal Highs), SSL (Equal Lows), Double Top/Bottom, Sessions
 3. SMC: Order Blocks valides, FVG valides, zones institutionnelles
 4. Momentum (confirmation uniquement): RSI, EMA20/50, MACD, ATR, ADX
+5. News (priorité absolue)
+
+═══ FILTRE NEWS PROFESSIONNEL ═══
+Les annonces macroéconomiques majeures ont priorité sur toute analyse technique.
+
+ÉVÉNEMENTS MAJEURS (FOMC, Fed Rate, CPI, Core CPI, PCE, Core PCE):
+- 30 min avant ou 60 min après → NO_TRADE automatique, aucune exception
+
+ÉVÉNEMENTS IMPORTANTS (NFP, ISM, GDP, Retail Sales, JOLTS, ADP):
+- 15 min avant ou 30 min après → Réduire confiance, jamais A+ ni >85%
+
+APRÈS UNE NEWS: Attendre stabilisation + BOS confirmé + liquidité capturée + retour FVG/OB.
+Les premières bougies après news sont potentiellement manipulatrices.
+
+RÈGLE PROFESSIONNELLE: Volatilité ≠ Opportunité. La priorité reste: Structure > Liquidité > BOS/CHOCH > FVG/OB > Momentum > News.
 
 NOTATION:
-A+ = Liquidité capturée + BOS confirmé + FVG/OB propre + M15/M5 alignés + Momentum aligné
+A+ = Liquidité capturée + BOS confirmé + FVG/OB propre + M15/M5 alignés + Momentum aligné + News CLEAR
 A  = Structure forte + bonne confluence + momentum valide
 B  = Setup acceptable mais incomplet
 < B = NO_TRADE
 
 GESTION DU RISQUE:
 SL = derrière la structure invalidante / dernier swing significatif
-TP1=1R, TP2=2R, TP3=3R
-Ratio minimal 1:2 — sinon NO_TRADE
-
-RÈGLE DE SÉLECTIVITÉ: Préférer manquer une opportunité plutôt que prendre un setup moyen. Si doute → NO_TRADE.
+TP1=1R, TP2=2R, TP3=3R. Ratio min 1:2 sinon NO_TRADE.
+Si doute → NO_TRADE.
 
 Réponds UNIQUEMENT avec un JSON valide, sans texte ni backtick.`;
 
@@ -79,13 +106,20 @@ SESSION: ${session}
 PRIX: ${price} | ATR: ${atr} | ADX: ${indicators.adx} | RSI: ${indicators.rsi}
 SL distance min: ${slDist}$
 
+═══ STATUT NEWS ═══
+Status: ${news.news_status}
+Événement: ${news.news_event}
+Minutes avant/après: ${news.minutes_to_event}
+Risque macro: ${news.macro_risk}
+${news.blocked ? '⛔ TRADE BLOQUÉ — Fenêtre news critique' : news.reduce_confidence ? '⚠️ CONFIANCE RÉDUITE — News importante proche' : '✅ Pas de news critique'}
+
 ═══ BOUGIES M15 (20 dernières) ═══
 ${candlesM15}
 
 ═══ BOUGIES M5 (30 dernières) ═══
 ${candlesM5}
 
-═══ INDICATEURS + SMC PAR TIMEFRAME ═══
+═══ INDICATEURS + SMC + LIQUIDITÉ PAR TIMEFRAME ═══
 ${tfSummary}
 
 ═══ NIVEAUX CLÉS ═══
@@ -119,9 +153,18 @@ FORMAT JSON OBLIGATOIRE:
   "fvg": "",
   "order_block": "",
   "liquidity": "",
+  "equal_highs": "",
+  "equal_lows": "",
+  "double_top": "",
+  "double_bottom": "",
+  "session_liquidity": "",
   "reason": "",
   "risks": "",
   "invalidation": "",
+  "news_status": "${news.news_status}",
+  "news_event": "${news.news_event}",
+  "minutes_to_event": ${news.minutes_to_event},
+  "macro_risk": "${news.macro_risk}",
   "session": "${session}",
   "atr": ${atr},
   "adx": ${indicators.adx},
@@ -174,16 +217,22 @@ FORMAT JSON OBLIGATOIRE:
       signal.tp2=+(entry-slDist*2).toFixed(2); signal.tp3=+(entry-slDist*3).toFixed(2);
     }
 
-    // Vérif ratio R:R minimum 1:2
+    // Vérif R:R minimum 1:2
     const rrNum = Math.abs(entry - parseFloat(signal.tp2)) / Math.abs(entry - parseFloat(signal.sl));
     if (rrNum < 1.8) {
       console.log(`[AI-BTC] R:R insuffisant: ${rrNum.toFixed(1)} < 2`);
       return null;
     }
 
+    // Si news HIGH_RISK → cap confiance à 85% et qualité max A
+    if (news.reduce_confidence) {
+      signal.confidence = Math.min(signal.confidence, 85);
+      if (signal.quality === 'A+') signal.quality = 'A';
+    }
+
     if (signal.confidence <= 10) signal.confidence = signal.confidence * 10;
 
-    console.log(`[AI-BTC] ${signal.direction} ${signal.confidence}% ${signal.quality} | M15:${m15Bias} M5:${m5Bias} | BOS:${signal.bos} | Durée:${signal.duree_estimee}`);
+    console.log(`[AI-BTC] ${signal.direction} ${signal.confidence}% ${signal.quality} | M15:${m15Bias} M5:${m5Bias} | News:${news.news_status} | Durée:${signal.duree_estimee}`);
     return signal;
 
   } catch (error) {
