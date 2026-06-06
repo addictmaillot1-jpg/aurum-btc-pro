@@ -175,7 +175,7 @@ cron.schedule('*/15 * * * *', async () => {
     if (!signal) { console.log('[BTC AUTO] Pas de signal'); isAnalyzing=false; return; }
 
     const { quality, confidence } = signal;
-    if ((quality === 'A' || quality === 'A+') && confidence >= 75) {
+    if ((quality === 'A' || quality === 'A+') && confidence >= 80) {
       await telegramService.sendSignal(signal, 'AUTO', 'BTC/USD');
       saveSignal(signal, 'AUTO');
       activeSignal   = { ...signal, timestamp: new Date().toISOString() };
