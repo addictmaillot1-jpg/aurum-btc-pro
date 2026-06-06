@@ -1,83 +1,193 @@
 const Anthropic = require('@anthropic-ai/sdk');
-
 const client = new Anthropic({ apiKey: process.env.ANTHROPIC_KEY });
 
 function getSession() {
   const h = new Date().getUTCHours();
-  if (h >= 22 || h < 7) return 'Asia 22h-07h UTC';
-  if (h >= 7 && h < 10) return 'London Open 07h-10h UTC';
+  if (h >= 22 || h < 7)  return 'Asia 22h-07h UTC';
+  if (h >= 7  && h < 10) return 'London Open 07h-10h UTC';
   if (h >= 10 && h < 12) return 'London Mid 10h-12h UTC';
   if (h >= 12 && h < 14) return 'Overlap London/NY 12h-14h UTC';
   if (h >= 14 && h < 17) return 'New York 14h-17h UTC';
   return 'Pre-market / Close';
 }
 
+function formatCandles(candles, limit) {
+  if (!candles || candles.length === 0) return 'Données indisponibles';
+  return candles.slice(-limit).map(c => {
+    const d = new Date(c.time * 1000).toISOString().slice(0, 16);
+    return `${d} O:${c.open.toFixed(2)} H:${c.high.toFixed(2)} L:${c.low.toFixed(2)} C:${c.close.toFixed(2)}`;
+  }).join('\n');
+}
+
 async function generateSignal(asset, price, indicators, timeframe) {
   const session = getSession();
-  const now = new Date().toLocaleString('fr-FR');
+  const now     = new Date().toLocaleString('fr-FR');
+  const atr     = indicators.atr || price * 0.002;
+  const slDist  = Math.max(Math.round(atr * 2.0 * 100) / 100, 200); // BTC SL min 200$
+  const tfd     = indicators.allTimeframes || {};
 
-  const system = 'Tu es AURUM v18 PRO, le meilleur systeme de trading institutionnel. Tu recois des donnees de marche reelles avec indicateurs calcules localement. Tu generes des signaux ultra-precis bases uniquement sur ces donnees. Reponds UNIQUEMENT avec JSON valide sans texte ni backtick.';
+  const candlesM15 = tfd['M15'] ? formatCandles(tfd['M15'].candles || [], 20) : 'N/A';
+  const candlesM5  = tfd['M5']  ? formatCandles(tfd['M5'].candles  || [], 30) : 'N/A';
 
-  const prompt = `Analyse ${asset} et genere un signal de trading professionnel.
+  const tfSummary = ['M5','M15'].map(tf => {
+    const d = tfd[tf];
+    if (!d) return `${tf}: N/A`;
+    const smc = d.smc || {};
+    return `${tf}: RSI=${d.rsi} EMA20=${d.ema20} EMA50=${d.ema50} ATR=${d.atr} ADX=${d.adx} MACD=${d.macd?.histogram} → ${d.bias} | BOS:${smc.bos?.direction||'NONE'} CHOCH:${smc.choch?.direction||'NONE'} FVG:${smc.fvgs?.length||0} OB:${smc.orderBlocks?.length||0}`;
+  }).join('\n');
 
-DONNEES MARCHE TEMPS REEL:
-- Actif: ${asset}
-- Prix actuel: ${price}
-- Session: ${session}
-- Timeframe analyse: ${timeframe}
-- Date/Heure: ${now}
+  const system = `Tu es un trader institutionnel spécialisé dans le scalping BTCUSD.
 
-INDICATEURS TECHNIQUES CALCULES:
-- RSI(14): ${indicators.rsi} ${indicators.rsi > 55 ? '(HAUSSIER)' : indicators.rsi < 45 ? '(BAISSIER)' : '(NEUTRE)'}
-- EMA20: ${indicators.ema20}
-- EMA50: ${indicators.ema50}  
-- EMA200: ${indicators.ema200}
-- Alignment EMA: ${indicators.bias}
-- MACD: ${indicators.macd ? `Line=${indicators.macd.macd} Signal=${indicators.macd.signal} Histo=${indicators.macd.histogram}` : 'N/A'}
-- ATR(14): ${indicators.atr} (volatilite)
-- ADX(14): ${indicators.adx} ${indicators.adx > 25 ? '(TENDANCE FORTE)' : '(TENDANCE FAIBLE)'}
-- Bollinger: Upper=${indicators.bollinger?.upper} Middle=${indicators.bollinger?.middle} Lower=${indicators.bollinger?.lower}
-- Support: ${indicators.sr?.support}
-- Resistance: ${indicators.sr?.resistance}
-- Pivot: ${indicators.sr?.pivot}
-- Score confluence: ${indicators.score}/100
-- Qualite estimee: ${indicators.quality}
+OBJECTIF: Identifier uniquement les setups BTCUSD à très forte probabilité.
+Durée moyenne des trades: Minimum 1 minute, Maximum 45 minutes.
+La qualité du setup est prioritaire sur la fréquence des trades.
+Si aucun avantage statistique clair n'existe: NO_TRADE.
 
-REGLES:
-- SL = ATR x 1.5 = ${Math.round(indicators.atr * 1.5 * 100) / 100}
-- TP1 = 1R (= SL distance)
-- TP2 = 2R
-- TP3 = 3R
-- Si ADX < 25 et score < 60: direction NO_TRADE
-- Entree PROCHE du prix actuel ${price}
+ARCHITECTURE MULTI-TIMEFRAME:
+M15 = CERVEAU → tendance dominante, BOS, CHOCH, liquidité, FVG, OB, biais principal
+M5  = GÂCHETTE → entrée précise, validation M15, momentum, rejet, déclenchement
+
+RÈGLE ABSOLUE: Si M15 et M5 ne sont pas alignés → NO_TRADE.
+M15 BUY + M5 BUY = autorisé
+M15 SELL + M5 SELL = autorisé
+M15 BUY + M5 SELL = NO_TRADE
+M15 SELL + M5 BUY = NO_TRADE
+
+PRIORITÉ D'ANALYSE:
+1. Structure: HH, HL, LH, LL, BOS, CHOCH
+2. Liquidité: BSL, SSL, stop hunts, liquidité capturée
+3. SMC: Order Blocks valides, FVG valides, zones institutionnelles
+4. Momentum (confirmation uniquement): RSI, EMA20/50, MACD, ATR, ADX
+
+NOTATION:
+A+ = Liquidité capturée + BOS confirmé + FVG/OB propre + M15/M5 alignés + Momentum aligné
+A  = Structure forte + bonne confluence + momentum valide
+B  = Setup acceptable mais incomplet
+< B = NO_TRADE
+
+GESTION DU RISQUE:
+SL = derrière la structure invalidante / dernier swing significatif
+TP1=1R, TP2=2R, TP3=3R
+Ratio minimal 1:2 — sinon NO_TRADE
+
+RÈGLE DE SÉLECTIVITÉ: Préférer manquer une opportunité plutôt que prendre un setup moyen. Si doute → NO_TRADE.
+
+Réponds UNIQUEMENT avec un JSON valide, sans texte ni backtick.`;
+
+  const prompt = `SCALPING BTCUSD — ${now}
+SESSION: ${session}
+PRIX: ${price} | ATR: ${atr} | ADX: ${indicators.adx} | RSI: ${indicators.rsi}
+SL distance min: ${slDist}$
+
+═══ BOUGIES M15 (20 dernières) ═══
+${candlesM15}
+
+═══ BOUGIES M5 (30 dernières) ═══
+${candlesM5}
+
+═══ INDICATEURS + SMC PAR TIMEFRAME ═══
+${tfSummary}
+
+═══ NIVEAUX CLÉS ═══
+Support: ${indicators.sr?.support} | Résistance: ${indicators.sr?.resistance}
+EMA20: ${indicators.ema20} | EMA50: ${indicators.ema50}
+Bollinger: U=${indicators.bollinger?.upper} L=${indicators.bollinger?.lower}
+
+═══ CALCUL SL/TP ═══
+SL distance = max(ATR×2, 200$) = ${slDist}$
+BUY  → SL=${+(price-slDist).toFixed(2)}, TP1=${+(price+slDist).toFixed(2)}, TP2=${+(price+slDist*2).toFixed(2)}, TP3=${+(price+slDist*3).toFixed(2)}
+SELL → SL=${+(price+slDist).toFixed(2)}, TP1=${+(price-slDist).toFixed(2)}, TP2=${+(price-slDist*2).toFixed(2)}, TP3=${+(price-slDist*3).toFixed(2)}
 
 FORMAT JSON OBLIGATOIRE:
-{"direction":"BUY","confidence":88,"quality":"A","entry":${price},"zone":"${price - 2} - ${price + 2}","sl":${price - indicators.atr * 1.5},"tp1":${price + indicators.atr},"tp2":${price + indicators.atr * 2},"tp3":${price + indicators.atr * 3},"rr":"1:3","signal_type":"AUTO","reason":"Raison precise basee sur les indicateurs","rsi":${indicators.rsi},"ema_bias":"${indicators.bias}","session":"${session}","timeframe":"${timeframe}","atr":${indicators.atr},"adx":${indicators.adx},"score":${indicators.score}}`;
+{
+  "direction": "BUY | SELL | NO_TRADE",
+  "confidence": 0-100,
+  "quality": "A+ | A | B",
+  "entry": ${price},
+  "sl": 0,
+  "tp1": 0,
+  "tp2": 0,
+  "tp3": 0,
+  "rr": "1:2 ou plus",
+  "timeframe_context": "M15",
+  "timeframe_entry": "M5",
+  "duree_estimee": "1 à 45 minutes",
+  "bias_m15": "",
+  "bias_m5": "",
+  "bos": "",
+  "choch": "",
+  "fvg": "",
+  "order_block": "",
+  "liquidity": "",
+  "reason": "",
+  "risks": "",
+  "invalidation": "",
+  "session": "${session}",
+  "atr": ${atr},
+  "adx": ${indicators.adx},
+  "rsi": ${indicators.rsi},
+  "score": ${indicators.score || 50}
+}`;
 
   try {
     const response = await client.messages.create({
       model: 'claude-haiku-4-5-20251001',
-      max_tokens: 1000,
+      max_tokens: 1500,
       system,
       messages: [{ role: 'user', content: prompt }]
     });
 
     const raw = response.content[0].text;
-    const s = raw.indexOf('{');
-    const e = raw.lastIndexOf('}');
+    const s   = raw.indexOf('{');
+    const e   = raw.lastIndexOf('}');
     if (s < 0) return null;
 
-    const signal = JSON.parse(raw.slice(s, e + 1));
-
+    const signal = JSON.parse(raw.slice(s, e+1));
     if (!signal.direction) return null;
+
     if (signal.direction === 'NO_TRADE') {
-      console.log('[AI] NO_TRADE signal - pas envoye');
+      console.log('[AI-BTC] NO_TRADE — pas de setup valide');
       return null;
     }
 
+    // Vérif alignement M15/M5
+    const m15Bias = tfd['M15']?.bias || 'NEUTRAL';
+    const m5Bias  = tfd['M5']?.bias  || 'NEUTRAL';
+    if (signal.direction === 'BUY'  && (m15Bias !== 'BULLISH' || m5Bias !== 'BULLISH')) {
+      console.log(`[AI-BTC] BUY bloqué — M15:${m15Bias} M5:${m5Bias} non alignés`);
+      return null;
+    }
+    if (signal.direction === 'SELL' && (m15Bias !== 'BEARISH' || m5Bias !== 'BEARISH')) {
+      console.log(`[AI-BTC] SELL bloqué — M15:${m15Bias} M5:${m5Bias} non alignés`);
+      return null;
+    }
+
+    // Correction SL/TP si inversés
+    const isBuy = signal.direction === 'BUY';
+    const entry = parseFloat(signal.entry) || price;
+    if (isBuy  && parseFloat(signal.sl) > entry) {
+      signal.sl=+(entry-slDist).toFixed(2); signal.tp1=+(entry+slDist).toFixed(2);
+      signal.tp2=+(entry+slDist*2).toFixed(2); signal.tp3=+(entry+slDist*3).toFixed(2);
+    }
+    if (!isBuy && parseFloat(signal.sl) < entry) {
+      signal.sl=+(entry+slDist).toFixed(2); signal.tp1=+(entry-slDist).toFixed(2);
+      signal.tp2=+(entry-slDist*2).toFixed(2); signal.tp3=+(entry-slDist*3).toFixed(2);
+    }
+
+    // Vérif ratio R:R minimum 1:2
+    const rrNum = Math.abs(entry - parseFloat(signal.tp2)) / Math.abs(entry - parseFloat(signal.sl));
+    if (rrNum < 1.8) {
+      console.log(`[AI-BTC] R:R insuffisant: ${rrNum.toFixed(1)} < 2`);
+      return null;
+    }
+
+    if (signal.confidence <= 10) signal.confidence = signal.confidence * 10;
+
+    console.log(`[AI-BTC] ${signal.direction} ${signal.confidence}% ${signal.quality} | M15:${m15Bias} M5:${m5Bias} | BOS:${signal.bos} | Durée:${signal.duree_estimee}`);
     return signal;
+
   } catch (error) {
-    console.error('[AI] Erreur generation signal:', error.message);
+    console.error('[AI-BTC] Erreur:', error.message);
     return null;
   }
 }
