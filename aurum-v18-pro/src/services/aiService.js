@@ -23,7 +23,7 @@ async function generateSignal(asset, price, indicators, timeframe, newsRisk) {
   const session = getSession();
   const now     = new Date().toLocaleString('fr-FR');
   const atr     = indicators.atr || price * 0.002;
-  const slDist  = Math.max(Math.round(atr * 2.0 * 100) / 100, 200);
+  const slDist  = Math.max(Math.round(atr * 1.5 * 100) / 100, 100);
   const tfd     = indicators.allTimeframes || {};
   const news    = newsRisk || { news_status: 'CLEAR', news_event: 'NONE', minutes_to_event: 0, macro_risk: 'LOW', blocked: false };
 
