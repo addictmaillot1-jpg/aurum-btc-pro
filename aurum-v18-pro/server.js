@@ -154,15 +154,6 @@ cron.schedule('*/15 * * * *', async () => {
     indicators.price = price;
     console.log(`[BTC AUTO] Prix: ${price}`);
 
-    // Vérifie alignement M15/M5
-    const m15Bias = indicators.allTimeframes?.['M15']?.bias || 'NEUTRAL';
-    const m5Bias  = indicators.allTimeframes?.['M5']?.bias  || 'NEUTRAL';
-    if (m15Bias === 'NEUTRAL' || m5Bias === 'NEUTRAL' || m15Bias !== m5Bias) {
-      console.log(`[BTC AUTO] M15/M5 non alignés (${m15Bias}/${m5Bias}) — NO_TRADE`);
-      isAnalyzing = false;
-      return;
-    }
-
     // Vérif news avant analyse
     const newsRisk = await newsService.checkNewsRisk();
     if (newsRisk.blocked) {
